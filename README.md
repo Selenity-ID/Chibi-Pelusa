@@ -45,4 +45,4 @@ Para utilizar la funcionalidad de entrenamiento de escuelita con Gemini se debe 
 
 ## 📄 Licencia
 Este proyecto es una iniciativa de investigación técnica y arquitectura de software. 
-Se autoriza la inspección del código con fines educativos y de revisión (Portfolio). Para usos comerciales, modificaciones o implementaciones derivadas, se requiere el consentimiento explícito de la autora (**Selene Jimenez**).
+Se autoriza la inspección del código con fines educativos y de revisión. Para usos comerciales, modificaciones o implementaciones derivadas, se requiere el consentimiento explícito de la autora (**Selene Jimenez**).
