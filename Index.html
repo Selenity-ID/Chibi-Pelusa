@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <style>
+    :root { --primary: #673ab7; --primary-light: #9575cd; --primary-dark: #311b92; --danger: #e53935; --success: #43a047; --bg-color: #f3e5f5; --white: #ffffff; }
+    body { font-family: 'Segoe UI', Tahoma, sans-serif; margin: 0; background-color: var(--bg-color); color: #333; }
+    nav { background-color: var(--primary); display: flex; padding: 10px; overflow-x: auto; box-shadow: 0 2px 5px rgba(0,0,0,0.2);}
+    nav button { background: none; border: none; color: var(--white); padding: 12px 20px; cursor: pointer; font-size: 16px; border-radius: 20px; white-space: nowrap; transition: 0.3s;}
+    nav button:hover, nav button.active { background-color: var(--primary-dark); }
+    .container { max-width: 800px; margin: 20px auto; padding: 20px; background: var(--white); border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+    .tab-content { display: none; } .tab-content.active { display: block; }
+    input[type="text"], textarea { width: calc(100% - 22px); padding: 10px; margin-bottom: 10px; border: 1px solid var(--primary-light); border-radius: 6px; font-family: inherit;}
+    button.action-btn { background-color: var(--primary); color: var(--white); border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; width: 100%; margin-bottom: 5px; transition: 0.2s;}
+    button.action-btn:hover { background-color: var(--primary-dark); }
+    button.action-btn:disabled { background-color: #ccc; cursor: not-allowed; }
+    button.btn-delete { background-color: var(--danger); width: auto; margin-left: 10px; }
+    button.btn-delete:hover { background-color: #b71c1c; }
+    .chat-box { border: 1px solid #ddd; border-radius: 6px; padding: 15px; height: 350px; overflow-y: auto; background: #fafafa; margin-bottom: 10px; }
+    .msg { margin-bottom: 10px; padding: 8px 12px; border-radius: 12px; max-width: 85%; }
+    .msg.user { background-color: var(--primary-light); color: white; margin-left: auto; text-align: right; }
+    .msg.bot { background-color: #e0e0e0; margin-right: auto; }
+    .msg.ninfa { background-color: #ce93d8; margin-right: auto; border-left: 4px solid var(--primary-dark); }
+    .msg.pelusa { background-color: #b39ddb; margin-left: auto; text-align: right; border-right: 4px solid var(--primary-dark); }
+    table { width: 100%; border-collapse: collapse; margin-top: 15px; } th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; } th { background-color: var(--primary-light); color: white; }
+    .admin-card { border: 1px solid #ddd; border-radius: 8px; padding: 15px; margin-bottom: 15px; background: #fafafa; }
+    .admin-card h3 { margin-top: 0; color: var(--primary-dark); }
+    .typing-indicator { font-style: italic; color: #888; font-size: 0.9em; padding: 5px; animation: blink 1.5s infinite; }
+    
+    /* MODAL CSS */
+    .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(3px); }
+    .modal-content { background: var(--white); padding: 25px; border-radius: 12px; max-width: 400px; width: 90%; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.3); animation: slideDown 0.3s ease-out; }
+    .modal-actions { display: flex; justify-content: space-between; margin-top: 25px; gap: 10px;}
+    .modal-actions button { width: 100%; margin: 0; }
+    @keyframes blink { 0% { opacity: 0.2; } 50% { opacity: 1; } 100% { opacity: 0.2; } }
+    @keyframes slideDown { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    /* Estilos para los botones dentro del chat */
+    .chat-action-btn { background-color: var(--primary); color: white; border: none; padding: 6px 12px; border-radius: 15px; cursor: pointer; margin-top: 8px; margin-right: 5px; font-size: 0.85em; transition: 0.2s; }
+    .chat-action-btn:hover { background-color: var(--primary-dark); }
+    .chat-action-btn.btn-cancel { background-color: #9e9e9e; }
+    .chat-action-btn.btn-cancel:hover { background-color: var(--danger); }
+  </style>
+</head>
+<body>
+  <nav>
+    <button class="active" onclick="showTab('chat')">💬 Chat Nativo</button>
+    <button onclick="showTab('school')">🏫 Escuelita</button>
+    <button onclick="showTab('boletin')">📊 Boletín</button>
+    <button onclick="showTab('admin')">⚙️ Admin BD</button>
+  </nav>
+
+  <div class="container">
+    <div id="chat" class="tab-content active">
+      <h2>Conversar con Chibi Pelusa</h2>
+      <div class="chat-box" id="chat-box"></div>
+      <input type="text" id="chat-input" placeholder="Pregúntale algo..." onkeypress="if(event.key === 'Enter') sendChat()">
+      <button class="action-btn" onclick="sendChat()">Enviar</button>
+    </div>
+
+    <div id="school" class="tab-content">
+      <h2>🏫 Escuelita de Ninfa</h2>
+      <input type="text" id="school-topic" placeholder="Ej: La fotosíntesis">
+      <button class="action-btn" id="school-btn" onclick="runSchoolLive()">Iniciar Clase Interactiva</button>
+      <div class="chat-box" id="school-box" style="margin-top: 15px; height: 400px;"></div>
+    </div>
+
+    <div id="boletin" class="tab-content">
+      <h2>📊 Boletín Académico</h2>
+      <div id="boletin-data"></div>
+    </div>
+
+    <div id="admin" class="tab-content">
+      <h2>Panel de Administración y Configuración</h2>
+      
+      <div class="admin-card" style="border-left: 5px solid var(--primary-dark);">
+        <h3>⚙️ Configuración del Motor NLU</h3>
+        <p style="font-size:0.9em; color:#666;">Palabras ignoradas en la construcción del Grafo Semántico (Stopwords).</p>
+        <textarea id="stopwords-input" rows="3" style="width:100%;"></textarea>
+        <button class="action-btn" id="btn-save-stopwords" onclick="saveStopwordsUI()">Guardar Stopwords</button>
+      </div>
+      
+      <h3>Base de Conocimiento (Matrices de Markov)</h3>
+      <div id="admin-data"></div>
+    </div>
+  </div>
+
+  <div id="delete-modal" class="modal-overlay">
+    <div class="modal-content">
+      <h3 style="color: var(--danger); margin-top: 0;">⚠️ Confirmar Eliminación</h3>
+      <p>¿Estás segura de que deseas borrar este tema de la matriz de conocimiento? Esta acción no se puede deshacer y borrará los tokens asociados.</p>
+      <div class="modal-actions">
+        <button class="action-btn" style="background-color: #9e9e9e;" onclick="closeDeleteModal()">Cancelar</button>
+        <button class="action-btn btn-delete" id="confirm-delete-btn" onclick="confirmDeleteTopic()">Sí, Eliminar</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --- NAVEGACIÓN Y CHAT ---
+    function showTab(tabId) { 
+      document.querySelectorAll('.tab-content, nav button').forEach(el => el.classList.remove('active')); 
+      document.getElementById(tabId).classList.add('active'); 
+      event.target.classList.add('active'); 
+      if(tabId === 'admin') loadAdmin(); 
+      if(tabId === 'boletin') loadBoletin(); 
+    }
+
+    function addMessage(boxId, text, className, author = "") { 
+      const box = document.getElementById(boxId); 
+      const msgDiv = document.createElement('div'); 
+      msgDiv.className = `msg ${className}`; 
+      msgDiv.innerHTML = author ? `<strong>${author}:</strong><br>${text}` : text; 
+      box.appendChild(msgDiv); 
+      box.scrollTop = box.scrollHeight; 
+    }
+
+    function sendChat() { 
+      const i = document.getElementById('chat-input'); 
+      if (!i.value) return; 
+      addMessage('chat-box', i.value, 'user'); 
+      google.script.run.withSuccessHandler(r => addMessage('chat-box', r, 'bot', 'Chibi Pelusa')).chatWithNativeBot(i.value); 
+      i.value = ''; 
+    }
+
+    // Función para procesar los clics en los botones del chat
+    function sendChatFromButton(comando) { 
+      // Desactivar los botones anteriores para evitar clics dobles
+      document.querySelectorAll('#chat-box .chat-action-btn').forEach(b => {
+          b.disabled = true;
+          b.style.opacity = '0.5';
+          b.style.cursor = 'default';
+      });
+      
+      addMessage('chat-box', comando, 'user'); 
+      google.script.run.withSuccessHandler(r => {
+          addMessage('chat-box', r, 'bot', 'Chibi Pelusa');
+      }).chatWithNativeBot(comando); 
+    }
+    
+    // --- LÓGICA DE ESCUELITA EN TIEMPO REAL ---
+    let temaActual = "";
+    let indexTemaActual = -1;
+    let intentosClase = 0;
+
+    function showTyping(who) {
+      const box = document.getElementById('school-box');
+      const typingDiv = document.createElement('div');
+      typingDiv.id = 'typing-indicator';
+      typingDiv.className = 'typing-indicator';
+      typingDiv.innerText = `${who} está escribiendo ✍️...`;
+      box.appendChild(typingDiv);
+      box.scrollTop = box.scrollHeight;
+    }
+
+    function removeTyping() {
+      const indicator = document.getElementById('typing-indicator');
+      if (indicator) indicator.remove();
+    }
+
+    function runSchoolLive() {
+      const topic = document.getElementById('school-topic').value;
+      if (!topic) return;
+      temaActual = topic;
+      intentosClase = 0;
+      
+      document.getElementById('school-box').innerHTML = '';
+      document.getElementById('school-btn').disabled = true;
+      
+      showTyping("Maestra Ninfa");
+      
+      google.script.run.withSuccessHandler(res => {
+        removeTyping();
+        indexTemaActual = res.index_tema; 
+        addMessage('school-box', res.texto, 'ninfa', 'Ninfa');
+        addMessage('school-box', res.pregunta, 'ninfa', 'Ninfa');
+        cicloEvaluacion(res.pregunta);
+      }).withFailureHandler(err => {
+        removeTyping();
+        addMessage('school-box', "Error: " + err.message, 'bot', 'Sistema');
+        document.getElementById('school-btn').disabled = false;
+      }).iniciarClaseAsincrona(topic);
+    }
+
+    function cicloEvaluacion(preguntaNinfa) {
+      if (intentosClase >= 3) {
+        addMessage('school-box', "Se acabó el tiempo de la clase. ¡A repasar los tokens!", 'bot', 'Sistema');
+        document.getElementById('school-btn').disabled = false;
+        return;
+      }
+      intentosClase++;
+      
+      showTyping("Chibi Pelusa");
+      
+      google.script.run.withSuccessHandler(respuestaPelusa => {
+        removeTyping();
+        addMessage('school-box', respuestaPelusa, 'pelusa', 'Pelusa');
+        showTyping("Maestra Ninfa evaluando");
+        
+        google.script.run.withSuccessHandler(evaluacion => {
+          removeTyping();
+          const feedbackFinal = `[Nota: ${evaluacion.nota}/10] ${evaluacion.feedback}`;
+          addMessage('school-box', feedbackFinal, 'ninfa', 'Ninfa');
+          
+          if (evaluacion.aprobado || intentosClase >= 3) {
+             google.script.run.withSuccessHandler(function() {
+                 addMessage('school-box', "¡La nota ha sido guardada en el Boletín!", 'bot', 'Sistema');
+                 document.getElementById('school-btn').disabled = false;
+                 loadBoletin();
+             }).guardarBoletin(temaActual, evaluacion.nota, intentosClase, evaluacion.aprobado, evaluacion.feedback);
+          } else {
+             addMessage('school-box', evaluacion.nueva_pregunta, 'ninfa', 'Ninfa');
+             cicloEvaluacion(evaluacion.nueva_pregunta);
+          }
+        }).ninfaEvaluaAsincrona(preguntaNinfa, respuestaPelusa);
+        
+      }).pelusaRespondeClaseAsincrona(preguntaNinfa, indexTemaActual);
+    }
+
+    // --- CARGA DE TABLAS Y ADMIN ---
+    function loadBoletin() {
+      google.script.run.withSuccessHandler(data => {
+        if(data.length === 0) { document.getElementById('boletin-data').innerHTML = "<p>Aún no hay notas.</p>"; return; }
+        let html = `<table><tr><th>Fecha</th><th>Tema</th><th>Nota</th><th>Intentos</th><th>Comentario</th></tr>`;
+        data.reverse().forEach(r => { 
+          html += `<tr><td><small>${r.fecha}</small></td><td><strong>${r.tema}</strong></td><td style="color:${r.nota>=7?'green':'red'};font-weight:bold;">${r.nota}/10</td><td>${r.intentos}</td><td><small>${r.comentario}</small></td></tr>`; 
+        });
+        document.getElementById('boletin-data').innerHTML = html + "</table>";
+      }).getBoletinData();
+    }
+    
+    function loadConfiguraciones() {
+      google.script.run.withSuccessHandler(data => {
+        document.getElementById('stopwords-input').value = data.join(', ');
+      }).getStopwords();
+    }
+
+    function saveStopwordsUI() {
+      const btn = document.getElementById('btn-save-stopwords');
+      btn.innerText = "Guardando..."; btn.disabled = true;
+      const val = document.getElementById('stopwords-input').value;
+      google.script.run.withSuccessHandler(res => {
+        btn.innerText = res;
+        setTimeout(() => { btn.innerText = "Guardar Stopwords"; btn.disabled = false; }, 1500);
+      }).updateStopwords(val);
+    }
+
+    function loadAdmin() {
+      loadConfiguraciones();
+      
+      google.script.run.withSuccessHandler(data => {
+        const c = document.getElementById('admin-data'); 
+        c.innerHTML = '';
+        data.forEach((e) => {
+          let corpusHtml = `<div id="corpus-container-${e.id}">`;
+          if (e.corpus && e.corpus.length > 0) {
+            e.corpus.forEach((oracion) => {
+              corpusHtml += `
+                <div style="display:flex; margin-bottom:5px;">
+                  <input type="text" class="corpus-input-${e.id}" value="${oracion.replace(/"/g, '&quot;')}" placeholder="Escribe una oración...">
+                  <button class="action-btn btn-delete" style="width:auto; padding:5px 10px;" onclick="this.parentElement.remove()">X</button>
+                </div>`;
+            });
+          }
+          corpusHtml += `</div><button class="action-btn" style="background-color: var(--success); width:auto; margin-bottom:10px;" onclick="addCorpusField('${e.id}')">+ Añadir Campo de Oración</button>`;
+
+          c.innerHTML += `<div class="admin-card"><h3>${e.topic}</h3>
+            <label>Keywords (separadas por comas):</label>
+            <input type="text" id="kw-${e.id}" value="${e.keywords.join(', ')}">
+            <label>Corpus de Respuestas (Campos individuales):</label>
+            ${corpusHtml}
+            <div style="display: flex; margin-top: 10px;">
+              <button class="action-btn" onclick="saveAdminCard('${e.id}')" id="btn-save-${e.id}">Guardar en Matriz</button>
+              <button class="action-btn btn-delete" onclick="eliminarTemaUI('${e.id}')">Eliminar Tema</button>
+            </div>
+          </div>`;
+        });
+      }).getKnowledgeDatabases(); 
+    }
+
+    function addCorpusField(id) {
+      const container = document.getElementById(`corpus-container-${id}`);
+      const newDiv = document.createElement('div');
+      newDiv.style.cssText = "display:flex; margin-bottom:5px;";
+      newDiv.innerHTML = `
+        <input type="text" class="corpus-input-${id}" placeholder="Escribe una nueva oración...">
+        <button class="action-btn btn-delete" style="width:auto; padding:5px 10px;" onclick="this.parentElement.remove()">X</button>
+      `;
+      container.appendChild(newDiv);
+    }
+
+    function saveAdminCard(id) {
+      const btn = document.getElementById(`btn-save-${id}`);
+      btn.innerText = "Guardando..."; btn.disabled = true;
+      
+      const newKw = document.getElementById(`kw-${id}`).value;
+      const inputs = document.querySelectorAll(`.corpus-input-${id}`);
+      const newCorpusArray = Array.from(inputs)
+                                  .map(inp => inp.value.trim())
+                                  .filter(val => val !== "");
+      
+      google.script.run.withSuccessHandler(res => {
+        btn.innerText = res;
+        setTimeout(() => { btn.innerText = "Guardar en Matriz"; btn.disabled = false; }, 1500);
+      }).updateKnowledgeTopic(id, newCorpusArray, newKw);
+    }
+
+    // --- LÓGICA DEL MODAL DE ELIMINACIÓN ---
+    let topicToDeleteId = null;
+
+    function eliminarTemaUI(id) {
+      topicToDeleteId = id;
+      document.getElementById('delete-modal').style.display = 'flex';
+    }
+
+    function closeDeleteModal() {
+      topicToDeleteId = null;
+      document.getElementById('delete-modal').style.display = 'none';
+    }
+
+    function confirmDeleteTopic() {
+      if (!topicToDeleteId) return;
+      const btn = document.getElementById('confirm-delete-btn');
+      btn.innerText = "Borrando...";
+      btn.disabled = true;
+
+      google.script.run.withSuccessHandler(res => {
+        btn.innerText = "Sí, Eliminar";
+        btn.disabled = false;
+        closeDeleteModal();
+        loadAdmin(); // Refresca la lista automáticamente
+      }).deleteKnowledgeTopic(topicToDeleteId);
+    }
+  </script>
+</body>
+</html>
